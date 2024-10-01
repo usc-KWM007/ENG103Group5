@@ -5,6 +5,13 @@
     <title>FlaskBlog</title>
 </head>
 <body>
-   <h1>Welcome to FlaskBlog</h1>
+   <h1>Home Automation</h1>
+	<p>{{ message }}</p>
+	<form action="/Light/on" method="get">
+	<button type="submit">LED on</button>
+	</form>
+	<form action="/Light/off" method="get">
+	<button type="submit">LED off</button>
+	</form>
 </body>
 </html>
