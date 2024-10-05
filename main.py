@@ -1,11 +1,10 @@
 from flask import Flask, render_template
 from gpiozero import LED
-import RPi.GPIO as GPIO
+
 app = Flask(__name__)
-GPIO.cleanup()
+
 lightled = LED(21)
 
-GPIO.cleanup()
 @app.route('/')
 def index():
     return render_template('index.html')
