@@ -2,16 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>FlaskBlog</title>
+    <title>Home Automation</title>
 </head>
 <body>
    <h1>Home Automation</h1>
 	<p>{{ message }}</p>
 	<form action="/Light/on" method="get">
-	<button type="submit">LED on</button>
+		<button type="submit">LED on</button>
 	</form>
 	<form action="/Light/off" method="get">
-	<button type="submit">LED off</button>
+		<button type="submit">LED off</button>
+	</form>
+	<form action="/" method="get">
+		<button type="submit">Refresh</button>
 	</form>
 </body>
 </html>
