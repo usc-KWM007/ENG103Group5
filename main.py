@@ -1,8 +1,11 @@
 from flask import Flask, render_template
 from gpiozero import LED
+import RPi.GPIO as GPIO
 app = Flask(__name__)
+GPIO.cleanup()
 lightled = LED(21)
 
+GPIO.cleanup()
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -19,3 +22,10 @@ def light_state(state):
 		message = "Invalid State"
 	return render_template('index.html', message=message)#
 
+if __name__=="__main__":
+	while True:
+    		try:
+        		if __name__ == "__main__":
+            			app.run(host='0.0.0.0', port=80)
+    		except KeyboardInterrupt:
+        		print("Ending program")
