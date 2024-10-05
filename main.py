@@ -13,9 +13,11 @@ lightbutton = Button(6)
 distancesensor = DistanceSensor(echo=22,trigger=27)
 
 def distancesensorActivity():
+	#arrary for holding measurements
 	measurements=[]
 	while True:
 		measurement = distancesensor.distance*100
+		#avoid adding connection errors to array
 		if isinstance(measurement, float):
 			#check if array is getting long
 			if len(measurements) > 10:
@@ -36,6 +38,7 @@ def distancesensorActivity():
 		sleep(1)
 
 def buttonpress():
+	#trigged by light button
 	print("buttonpressed", file=sys.stderr)
 	lightled.off() if lightled.is_lit else lightled.on()
 	return
