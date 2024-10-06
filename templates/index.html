@@ -6,7 +6,11 @@
 </head>
 <body>
    <h1>Home Automation</h1>
-	<p>{{ message }}</p>
+	<p>{{ message["temperature"]}}</p>
+	<p>{{ message["humidity"]}}</p>
+	<p>{{ message["rain"]}}</p>
+	<p>{{ message["lightLED"]}}</p>
+	<p>{{message["not_recording"]}}</p>
 	<form action="/Light/on" method="get">
 		<button type="submit">LED on</button>
 	</form>
@@ -15,6 +19,9 @@
 	</form>
 	<form action="/" method="get">
 		<button type="submit">Refresh</button>
+	</form>
+	<form action="/Record" method="get">
+		<button type="submit">Toggle Cloud Recording</button>
 	</form>
 </body>
 </html>
