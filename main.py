@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, Response
 from gpiozero import LED, Button, DistanceSensor, InputDevice, RGBLED
 import sys
 from time import sleep
@@ -6,6 +6,7 @@ import threading
 import statistics
 import adafruit_dht
 import board
+import cv2
 
 app = Flask(__name__)
 
@@ -19,6 +20,7 @@ dht_device = adafruit_dht.DHT11(board.D23)
 #red green blue
 humidityled = RGBLED(13,19,26)
 templed = RGBLED(25,12,16)
+camera = cv2.VideoCapture(0)
 
 #global variables for holding sensor data and recording status
 #defaults/layout
@@ -115,6 +117,17 @@ def recordbuttonpress():
 lightbutton.when_pressed =  buttonpress
 recordbutton.when_pressed = recordbuttonpress
 
+def generate_frames():
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
+        else:
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
 @app.route('/')
 def index():
 	global cloudrecording
@@ -145,6 +158,11 @@ def toggle_recording():
 	sensorData['lightLED'] = "lights are on" if lightled.is_lit else "Lights are off"
 	message = sensorData if cloudrecording else {"not_recording":"Currently not recording, press record or press the record button to start recording"}
 	return render_template('index.html', message=message)
+
+
+@app.route('/securityfeed')
+def securityfeed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__=="__main__":
     		try:
