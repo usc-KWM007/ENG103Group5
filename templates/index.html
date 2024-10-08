@@ -2,31 +2,117 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Home Automation</title>
- </head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Automation Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .data-section {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .data-block {
+            background-color: #e9ecef;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            width: 30%;
+        }
+        .data-block p {
+            font-size: 1.2em;
+            color: #333;
+        }
+        .control-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .control-buttons form {
+            margin: 0 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .security-camera {
+            text-align: center;
+            margin-top: 20px;
+        }
+        img {
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+    </style>
+</head>
 <body>
-	
-	<center>
-	<h1>Home Automation</h1>
-	<p>{{ message["temperature"]}}</p>
-	<p>{{ message["humidity"]}}</p>
-	<p>{{ message["rain"]}}</p>
-	<p>{{ message["lightLED"]}}</p>
-	<p>{{message["not_recording"]}}</p>
-	</center>
-	<form action="/Light/on" method="get">
-		<button type="submit">LED on</button>
-	</form>
-	<form action="/Light/off" method="get">
-		<button type="submit">LED off</button>
-	</form>
-	<form action="/" method="get">
-		<button type="submit">Refresh</button>
-	</form>
-	<form action="/Record" method="get">
-		<button type="submit">Toggle Cloud Recording</button>
-	</form>
-	<h1>Security Camera</h1>
-	<img src="{{ url_for('securityfeed') }}" width="640" height="480">
+    <div class="container">
+        <h1>Home Automation</h1>
+        
+        <div class="data-section">
+            <div class="data-block">
+                <p>Temperature: {{ message["temperature"] }}°C</p>
+            </div>
+            <div class="data-block">
+                <p>Humidity: {{ message["humidity"] }}%</p>
+            </div>
+            <div class="data-block">
+                <p>Rain Status: {{ message["rain"] }}</p>
+            </div>
+        </div>
+        
+        <div class="data-section">
+            <div class="data-block">
+                <p>Light LED: {{ message["lightLED"] }}</p>
+            </div>
+            <div class="data-block">
+                <p>Recording Status: {{ message["not_recording"] }}</p>
+            </div>
+        </div>
+        
+        <div class="control-buttons">
+            <form action="/Light/on" method="get">
+                <button type="submit">LED On</button>
+            </form>
+            <form action="/Light/off" method="get">
+                <button type="submit">LED Off</button>
+            </form>
+            <form action="/" method="get">
+                <button type="submit">Refresh</button>
+            </form>
+            <form action="/Record" method="get">
+                <button type="submit">Toggle Cloud Recording</button>
+            </form>
+        </div>
+        
+        <h1>Security Camera</h1>
+        <div class="security-camera">
+            <img src="{{ url_for('securityfeed') }}" width="640" height="480" alt="Live Security Feed">
+        </div>
+    </div>
 </body>
 </html>
