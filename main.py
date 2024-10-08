@@ -7,6 +7,8 @@ import statistics
 import adafruit_dht
 import board
 import cv2
+import json
+import requests
 
 app = Flask(__name__)
 
@@ -22,21 +24,40 @@ humidityled = RGBLED(13,19,26)
 templed = RGBLED(25,12,16)
 camera = cv2.VideoCapture(0)
 
+slack_webhook = 'https://hooks.slack.com/services/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'
+
 #global variables for holding sensor data and recording status
 #defaults/layout
 sensorData = {"rain":"Rain data is unavaliable","temperature":"Temperature data is unavaliable","humidity":"Humidity data is unavaliable","lightLED":"Light status is unavaliable"}
 cloudrecording = False
+#used as a counter to stop slack spam
+sentSlack = 0
 
 def rainActivity():
 		global sensorData
+		global sentSlack
+		print(sentSlack)
 		#check rain sensor
 		if rainsensor.is_active:
 			rainled.off()
 			sensorData["rain"] = "It is not raining"
+			sentSlack = 0
+			
 		else:
 			rainled.on()
 			sensorData["rain"] = "It is raining!"
-		return
+			
+			if sentSlack == 0:
+				sentSlack = 1
+				try:
+					slack_message = {"text": "Warning!.\It is raining!."}
+					response = requests.post(slack_webhook, data=json.dumps(slack_message),headers={'Content-Type': 'application/json'})
+					if response.status_code != 200:
+						print('Request to slack returned an error %s, the response is:\n%s' % (response.status_code, response.text))
+				except:
+					print("Failed to sned to slack")
+			
+			return
 
 def temperaturehumidityActivity():
 	try:
