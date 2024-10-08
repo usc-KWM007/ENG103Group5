@@ -5,12 +5,15 @@
     <title>Home Automation</title>
  </head>
 <body>
+	
+	<center>
 	<h1>Home Automation</h1>
 	<p>{{ message["temperature"]}}</p>
 	<p>{{ message["humidity"]}}</p>
 	<p>{{ message["rain"]}}</p>
 	<p>{{ message["lightLED"]}}</p>
 	<p>{{message["not_recording"]}}</p>
+	</center>
 	<form action="/Light/on" method="get">
 		<button type="submit">LED on</button>
 	</form>
