@@ -30,7 +30,7 @@
         }
         .data-block {
             background-color: #e9ecef;
-            padding: 20px;
+            padding: 10px;
             border-radius: 8px;
             text-align: center;
             width: 30%;
@@ -75,10 +75,10 @@
         
         <div class="data-section">
             <div class="data-block">
-                <p>Temperature: {{ message["temperature"] }}°C</p>
+                <p>Temperature: {{ message["temperature"] }}</p>
             </div>
             <div class="data-block">
-                <p>Humidity: {{ message["humidity"] }}%</p>
+                <p>Humidity: {{ message["humidity"] }}</p>
             </div>
             <div class="data-block">
                 <p>Rain Status: {{ message["rain"] }}</p>
@@ -90,7 +90,7 @@
                 <p>Light LED: {{ message["lightLED"] }}</p>
             </div>
             <div class="data-block">
-                <p>Recording Status: {{ message["not_recording"] }}</p>
+                <p>Cloud Recording {{ message["not_recording"] }}</p>
             </div>
         </div>
         
@@ -101,8 +101,11 @@
             <form action="/Light/off" method="get">
                 <button type="submit">LED Off</button>
             </form>
+	    <form action="/togglecamera" method="get">
+                <button type="submit">Toggle Security Camera</button>
+            </form>
             <form action="/" method="get">
-                <button type="submit">Refresh</button>
+                <button type="submit">Refresh Data</button>
             </form>
             <form action="/Record" method="get">
                 <button type="submit">Toggle Cloud Recording</button>
@@ -111,7 +114,7 @@
         
         <h1>Security Camera</h1>
         <div class="security-camera">
-            <img src="{{ url_for('securityfeed') }}" width="640" height="480" alt="Live Security Feed">
+            <img src="/securityfeed" width="640" height="480" alt="Live Security Feed">
         </div>
     </div>
 </body>

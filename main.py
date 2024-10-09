@@ -9,9 +9,11 @@ import board
 import cv2
 import json
 import requests
+import configparser
 
 app = Flask(__name__)
 
+#Set sensors and pins
 lightled = LED(21)
 lightbutton = Button(6, bounce_time=0.05)
 recordbutton = Button(5, bounce_time=0.05)
@@ -22,9 +24,14 @@ dht_device = adafruit_dht.DHT11(board.D23)
 #red green blue
 humidityled = RGBLED(13,19,26)
 templed = RGBLED(25,12,16)
+cameraStatus = False
 camera = cv2.VideoCapture(0)
 
-slack_webhook = 'https://hooks.slack.com/services/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'
+#API for slack
+config = configparser.ConfigParser()
+config.read('config.py')
+slack_webhook = config['API_KEY']['API_KEY']
+
 
 #global variables for holding sensor data and recording status
 #defaults/layout
@@ -33,11 +40,11 @@ cloudrecording = False
 #used as a counter to stop slack spam
 sentSlack = 0
 
+#used to read rain sensor
 def rainActivity():
 		global sensorData
 		global sentSlack
-		print(sentSlack)
-		#check rain sensor
+		#check rain sensor and turn on/off light accordingly
 		if rainsensor.is_active:
 			rainled.off()
 			sensorData["rain"] = "It is not raining"
@@ -46,30 +53,30 @@ def rainActivity():
 		else:
 			rainled.on()
 			sensorData["rain"] = "It is raining!"
-			
+			#if its raining send the status to slack
 			if sentSlack == 0:
 				sentSlack = 1
 				try:
-					slack_message = {"text": "Warning!.\It is raining!."}
+					slack_message = {"text": "Warning! It is raining!."}
 					response = requests.post(slack_webhook, data=json.dumps(slack_message),headers={'Content-Type': 'application/json'})
 					if response.status_code != 200:
 						print('Request to slack returned an error %s, the response is:\n%s' % (response.status_code, response.text))
 				except:
-					print("Failed to sned to slack")
+					print("Failed to send to slack")
 			
 			return
 
+#used to read temperature and humidity sensor
 def temperaturehumidityActivity():
 	try:
 			temp = dht_device.temperature
 			humidity = dht_device.humidity
-			
+		
 			global sensorData
 			sensorData["temperature"] = "The temperature is "+str(temp)+"C"
 			sensorData["humidity"] = "The humidity is "+str(humidity)+"%"
 			
-			print("temp "+str(temp)+" humidity "+str(humidity))
-			#Temp logic
+			#Temp logic and change LED light
 			if temp >= 30:
 				templed.color=(1,0,0)
 			elif 20 <= temp:
@@ -77,7 +84,7 @@ def temperaturehumidityActivity():
 			else:
 				templed.color=(0,0,1)
 			
-			#Humidity logic
+			#Humidity logic and change LED light
 			if humidity >= 80:
 				humidityled.color=(1,0,0)
 			elif 40 <= humidity:
@@ -88,9 +95,9 @@ def temperaturehumidityActivity():
 			print(err.args[0])
 	return
 	
+#Used to read ultra sonic sensor
 def distanceActivity(measurements):
 	measurement = distancesensor.distance*100
-	print(measurement)
 	#avoid adding connection errors to array
 	if isinstance(measurement, float):
 			#check if array is getting long
@@ -98,7 +105,6 @@ def distanceActivity(measurements):
 				measurements.pop(0)
 				#create average once array is populated
 				average = statistics.mean(measurements)
-				print("average"+str(average))
 				#check big changes
 				if (average-1) >= measurement or measurement >= (average+1):
 					#if light is on and there is activity turn on light
@@ -108,7 +114,7 @@ def distanceActivity(measurements):
 			measurements.append(measurement)
 	return measurements
 	
-
+#main loop to call each sensor function every second
 def sensorActivity():
 	#arrary for holding measurements
 	measurements=[]
@@ -117,9 +123,21 @@ def sensorActivity():
 		rainActivity()
 		temperaturehumidityActivity()
 		measurements=distanceActivity(measurements)
-		print(measurements, file=sys.stderr)
 		sleep(1)
 	return
+
+#used to read and return frames from the camera and in the correct format
+def generate_frames():
+	global cameraStatus
+	while cameraStatus:
+		success, frame = camera.read()
+		if not success:
+			break
+		else:
+			ret, buffer = cv2.imencode('.jpg', frame)
+			frame = buffer.tobytes()
+			yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
 
 def buttonpress():
 	#trigged by light button
@@ -128,7 +146,8 @@ def buttonpress():
 	return
 
 def recordbuttonpress():
-	print("recordbuttonpressed", file=sys.stderr)
+	#triggered by record button and website toggle
+	print("recordtoggled", file=sys.stderr)
 	global cloudrecording
 	cloudrecording = False if cloudrecording else True
 	return
@@ -138,28 +157,25 @@ def recordbuttonpress():
 lightbutton.when_pressed =  buttonpress
 recordbutton.when_pressed = recordbuttonpress
 
-def generate_frames():
-    while True:
-        success, frame = camera.read()
-        if not success:
-            break
-        else:
-            ret, buffer = cv2.imencode('.jpg', frame)
-            frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
+		
+#default route
 @app.route('/')
 def index():
+	#check light and recording status
 	global cloudrecording
 	sensorData['lightLED'] = "lights are on" if lightled.is_lit else "Lights are off"
-	message = sensorData if cloudrecording else {"not_recording":"Currently not recording, press record or press the record button to start recording"}
+	message = sensorData if cloudrecording else {"not_recording":"is not active"}
+	#return sensor data
 	return render_template('index.html', message=message)
 
+#routes for turning on/off the lights
 @app.route('/Light/<state>')
 def light_state(state):
+	#check recording status
 	global cloudrecording
-	message = sensorData if cloudrecording else {"not_recording":"Currently not recording, press record or press the record button to start recording"}
+	message = sensorData if cloudrecording else {"not_recording":"is not active"}
+	#turn on/off lights accordingly
 	if state == 'on':
 		lightled.on()
 		sensorData['lightLED'] = "Lights are on"
@@ -172,27 +188,48 @@ def light_state(state):
 		sensorData['lightLED'] = "Light status is unknown"
 	return render_template('index.html', message=message)
 
+#route for toggling recording to the cloud
 @app.route('/Record')
 def toggle_recording():
 	recordbuttonpress()
 	global cloudrecording
 	sensorData['lightLED'] = "lights are on" if lightled.is_lit else "Lights are off"
-	message = sensorData if cloudrecording else {"not_recording":"Currently not recording, press record or press the record button to start recording"}
+	message = sensorData if cloudrecording else {"not_recording":"is not active"}
 	return render_template('index.html', message=message)
 
+#route for toggling camera
+@app.route('/togglecamera')
+def toggleCamera():
+	global cameraStatus
+	global camera
+	#turn off camera to reduce power draw when not in use
+	if cameraStatus:
+		cameraStatus=False
+		#disconnect and stop recording
+		camera.release()
+		#reconnect not recording
+		camera = cv2.VideoCapture(0)
+	else:
+		cameraStatus=True
+	global cloudrecording
+	message = sensorData if cloudrecording else {"not_recording":"is not active"}
+	return render_template('index.html', message=message)
 
+#route for sending frames from the camera, multi-part
 @app.route('/securityfeed')
 def securityfeed():
-    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+	return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+#start line
 if __name__=="__main__":
     		try:
-        		if __name__ == "__main__":
-            			t1 = threading.Thread(target = app.run, kwargs=dict(host='0.0.0.0', port=80)).start()
-            			#keep distance checking on seperate thread due to looping
-            			t2 = threading.Thread(target = sensorActivity).start()
+            		t1 = threading.Thread(target = app.run, kwargs=dict(host='0.0.0.0', port=80, threaded=True)).start()
+            		#keep distance checking on seperate thread due to looping and blocking main thread
+            		t2 = threading.Thread(target = sensorActivity).start()
             			
             			
-    		except KeyboardInterrupt: #clean up GPIO
+    		except KeyboardInterrupt: #clean up GPIO and disconnect camera
         		print("Ending program")
+        		camera.release()
+
         		
